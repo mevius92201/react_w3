@@ -1,7 +1,7 @@
 import axios from "axios";
 import './assets/all.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import "bootstrap"
+import { Modal } from 'bootstrap';
 import ReactDOM from 'react-dom/client';
 import { useState, useEffect, useRef } from 'react';
 
@@ -14,7 +14,8 @@ function App() {
     password: ""
   });
   const [isAuth, setisAuth] = useState(false);
-  const productModalRef = useRef(null);
+  //const productModalRef = useRef(null);
+  
   const [products, setProducts] = useState([]);
 
   useEffect(() => {
@@ -23,9 +24,9 @@ function App() {
       "$1"
     );
     axios.defaults.headers.common.Authorization = token;
-    productModalRef.current = new bootstrap.Modal("#productModal", {
-      keyboard: false
-    });
+    // productModalRef.current = new bootstrap.Modal("#productModal", {
+    //   keyboard: false
+    // });
     checkAdmin();
   }, []);
 
@@ -33,7 +34,7 @@ function App() {
     try {
       await axios.post(`${API_BASE}/api/user/check`);
       setisAuth(true);
-      getProduct();
+      getProducts();
     } catch (err) {
       console.log(err.response.data.message);
     }
@@ -52,22 +53,40 @@ function App() {
     try {
       const response = await axios.post(`${API_BASE}/admin/signin`, formData);
       const { token, expired } = response.data;
-      document.cookie = `hexToken=${token};expires=${new Date(expired)};`;
+      document.cookie = `access_token=${token};expires=${new Date(expired)};`;
       axios.defaults.headers.common.Authorization = token;
       setisAuth(true);
-      getProduct();
+      getProducts();
     } catch (error) {
       alert("登入失敗: " + error.response.data.message);
     }
   };
-  const getProduct = async (e) => {
+  const getProducts = async () => {
     try {
       const res = await axios.get(`${API_BASE}/api/${API_PATH}/admin/products`);
-      setProducs = res.data.products;
+      setProducts(res.data.products);
     } catch (error) {
-      alert("獲取商品失敗: " + error.response.data.message);
+      console.log(error.response.data.message);
     }
   };
+
+  const modalRef = useRef(null);
+  const myModalRef = useRef(null);
+  
+  useEffect(() => 
+    myModalRef.current = new Modal(document.getElementById('myModal'), {
+  keyboard: false
+    
+}), []);
+
+  // const deleteProduct = async () => {
+  //   try {
+  //     const res = await axios.post(`${API_BASE}/admin/admin/product/${id}`);
+  //     getProducts();
+  //   } catch (error) {
+  //     console.log("delete failed");
+  //   }
+  // };
 
   return (
     <>
@@ -89,39 +108,41 @@ function App() {
                 </tr>
               </thead>
               <tbody>
-                {products.map((item) => {
-                  return (
-                    <tr key="item.id">
-                      <td>{item.category}</td>
-                      <td>{item.name}</td>
-                      <td className="text-end">{item.origin_price}</td>
-                      <td className="text-end">{item.price}</td>
-                      <td>
-                        {is_enabled ? (
-                          <span className="text-success">啟用</span>
-                        ) : (
-                          <span>未啟用</span>
-                        )}
-                      </td>
-                      <td>
-                        <div className="btn-group">
-                          <button
-                            type="button"
-                            className="btn btn-outline-primary btn-sm"
-                          >
-                            編輯
-                          </button>
-                          <button
-                            type="button"
-                            className="btn btn-outline-danger btn-sm"
-                          >
-                            刪除
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
+                {products.map((item) => (
+                  <tr key={item.id}>
+                    <td>{item.category}</td>
+                    <td>{item.title}</td>
+                    <td className="text-end">{item.origin_price}</td>
+                    <td className="text-end">{item.price}</td>
+                    <td>
+                      {item.is_enabled ? (
+                        <span className="text-success">啟用</span>
+                      ) : (
+                        <span>未啟用</span>
+                      )}
+                    </td>
+                    <td>
+                      <div className="btn-group">
+                        <button
+                          type="button"
+                          className="btn btn-outline-primary btn-sm"
+                          ref={modalRef}
+                          onClick={() => {
+                            myModalRef.current.show();
+                          }}
+                        >
+                          編輯
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-outline-danger btn-sm"
+                        >
+                          刪除
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
