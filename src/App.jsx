@@ -20,7 +20,7 @@ function App() {
 
   useEffect(() => {
     const token = document.cookie.replace(
-      /(?:(?:^|.*;\s*)hexToken\s*=\s*([^;]*).*$)|^.*$/,
+      /(?:(?:^|.*;\s*)access_token\s*=\s*([^;]*).*$)|^.*$/,
       "$1"
     );
     axios.defaults.headers.common.Authorization = token;
@@ -73,11 +73,12 @@ function App() {
   const modalRef = useRef(null);
   const myModalRef = useRef(null);
   
-  useEffect(() => 
-    myModalRef.current = new Modal(document.getElementById('myModal'), {
+  useEffect(() => {
+    if (myModalRef.current){
+       myModalRef.current = new bootstrap.Modal(document.getElementById('myModal'), {
   keyboard: false
-    
-}), []);
+      
+})}}, []);
 
   // const deleteProduct = async () => {
   //   try {
