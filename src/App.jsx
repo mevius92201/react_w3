@@ -2,20 +2,30 @@ import axios from "axios";
 import './assets/all.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { Modal } from 'bootstrap';
-import ReactDOM from 'react-dom/client';
 import { useState, useEffect, useRef } from 'react';
 
 const API_BASE = "https://ec-course-api.hexschool.io/v2";
 const API_PATH = "mevius"; 
 
+const defaultModal = {
+  imageUrl: "",
+  title: "",
+  category: "",
+  unit: "",
+  origin_price: 0,
+  price: 0,
+  id: "",
+  description: "",
+  content: "",
+  is_enabled: false,
+  imagesUrl: [""]
+}
 function App() {
   const [formData, setFormData] = useState({
     username: "",
     password: ""
   });
   const [isAuth, setisAuth] = useState(false);
-  //const productModalRef = useRef(null);
-  
   const [products, setProducts] = useState([]);
 
   useEffect(() => {
@@ -24,9 +34,6 @@ function App() {
       "$1"
     );
     axios.defaults.headers.common.Authorization = token;
-    // productModalRef.current = new bootstrap.Modal("#productModal", {
-    //   keyboard: false
-    // });
     checkAdmin();
   }, []);
 
@@ -66,28 +73,144 @@ function App() {
       const res = await axios.get(`${API_BASE}/api/${API_PATH}/admin/products`);
       setProducts(res.data.products);
     } catch (error) {
-      console.log(error.response.data.message);
+      console.log(error.response.message);
     }
   };
 
   const modalRef = useRef(null);
   const myModalRef = useRef(null);
-  
-  useEffect(() => {
-    if (myModalRef.current){
-       myModalRef.current = new bootstrap.Modal(document.getElementById('myModal'), {
-  keyboard: false
-      
-})}}, []);
+  const [modalState, setModalState] = useState(null);
+  const [productModal, setProductModal] = useState(defaultModal);
+  const deleteModalRef = useRef(null);
+  const myDeleteModalRef = useRef(null);
 
-  // const deleteProduct = async () => {
-  //   try {
-  //     const res = await axios.post(`${API_BASE}/admin/admin/product/${id}`);
-  //     getProducts();
-  //   } catch (error) {
-  //     console.log("delete failed");
-  //   }
-  // };
+  useEffect (()=>{
+    if (deleteModalRef.current && !myDeleteModalRef.current){
+      myDeleteModalRef.current = new Modal(deleteModalRef.current, {
+        keyboard: false,
+        backdrop: "static"
+      });
+    }
+  },[])
+const hasDeleteModalShow = (item) =>{
+  setProductModal(item);
+  if (myDeleteModalRef.current){
+    myDeleteModalRef.current.show();
+  } else {
+    console.log('modalRef.current is null')
+  }
+}
+  useEffect(() => {
+    if (modalRef.current && !myModalRef.current) {
+      myModalRef.current = new Modal(modalRef.current, {
+        keyboard: false,
+        backdrop: "static"
+      });
+    }
+  }, []);
+  
+  const hasModalShow = (state, item) =>{
+    setModalState(state);
+    if (state === 'add'){
+      setProductModal(defaultModal)
+    } else {
+      setProductModal(item)
+    }
+    if (myModalRef.current){
+      myModalRef.current.show();
+    } else {
+      console.log('modalRef.current is null')
+    }
+  }
+
+  const hasModalHide = () =>{
+    if (myModalRef.current){
+      myModalRef.current.hide();
+    } else {
+      console.log('modalRef.current is null')
+    }
+  }
+
+  const hasDeleteModalHide = () =>{
+    if (myDeleteModalRef.current){
+      myDeleteModalRef.current.hide();
+    } else {
+      console.log('deleteModalRef.current is null')
+    }
+  }
+
+  const addImage = () => {
+    const newImagesUrl = [...productModal.imagesUrl, ""]
+    setProductModal({
+      ...productModal,
+      imagesUrl: newImagesUrl
+    })
+  }
+
+  const deleteImage = () => {
+    const newImagesUrl = [...productModal.imagesUrl]
+    newImagesUrl.pop()
+    setProductModal({
+      ...productModal,
+      imagesUrl: newImagesUrl
+    })
+  }
+  
+  const setModalContent = (e) => {
+    const {value, name, checked, type} = e.target
+    setProductModal({
+      ...productModal,
+      [name]: type === "checkbox" ? checked : value
+    })
+  }
+
+const addProduct = async () => {
+  try {
+    await axios.post(`${API_BASE}/api/${API_PATH}/admin/product`,{
+      data: {
+        ...productModal,
+        origin_price: Number(productModal.origin_price),
+        price: Number(productModal.price),
+        is_enabled: productModal.is_enabled ? 1 : 0
+  }})
+  } catch(err){
+    console.log("add failed")
+  }
+}
+
+const editProduct = async () => {
+  try {
+    await axios.put(`${API_BASE}/api/${API_PATH}/admin/product/${productModal.id}`,{
+      data: {
+        ...productModal,
+        origin_price: Number(productModal.origin_price),
+        price: Number(productModal.price),
+        is_enabled: productModal.is_enabled ? 1 : 0
+  }})
+  } catch(err){
+    console.log("edit failed")
+  }
+}
+
+const submitProduct = async () =>{
+  const updateModal = modalState === 'add' ? addProduct : editProduct;
+  try{
+      await updateModal();
+      getProducts();
+      hasModalHide()
+    } catch(error){
+    console.log("submit failed")
+  }
+}
+  const deleteProduct = async () => {
+    try{
+      await axios.delete(`${API_BASE}/api/${API_PATH}/admin/product/${productModal.id}`);
+      getProducts();
+      hasDeleteModalHide()
+    } catch (error) {
+      console.log("delete failed");
+    }
+  };
 
   return (
     <>
@@ -95,7 +218,10 @@ function App() {
         <div>
           <div className="container">
             <div className="text-end mt-4">
-              <button className="btn btn-primary">建立新的產品</button>
+              <button className="btn btn-primary" 
+              onClick={() => 
+                {hasModalShow('add')}
+                }>建立新的產品</button>
             </div>
             <table className="table mt-4">
               <thead>
@@ -127,16 +253,15 @@ function App() {
                         <button
                           type="button"
                           className="btn btn-outline-primary btn-sm"
-                          ref={modalRef}
-                          onClick={() => {
-                            myModalRef.current.show();
-                          }}
+                          onClick={() =>{hasModalShow(`edit`, item)}}
+                          
                         >
                           編輯
                         </button>
                         <button
                           type="button"
                           className="btn btn-outline-danger btn-sm"
+                          onClick={() =>{hasDeleteModalShow(item)}}
                         >
                           刪除
                         </button>
@@ -188,11 +313,12 @@ function App() {
               </form>
             </div>
           </div>
-          <p className="mt-5 mb-3 text-muted">&copy; 2024~∞ - 六角學院</p>
+          <p className="mt-5 mb-3 text-muted">&copy; 2025~∞</p>
         </div>
       )}
       <div
         id="productModal"
+        ref={modalRef}
         className="modal fade"
         tabIndex="-1"
         aria-labelledby="productModalLabel"
@@ -202,13 +328,14 @@ function App() {
           <div className="modal-content border-0">
             <div className="modal-header bg-dark text-white">
               <h5 id="productModalLabel" className="modal-title">
-                <span>新增產品</span>
+                <span>{modalState === 'add' ? "新增產品" : "編輯產品"}</span>
               </h5>
               <button
                 type="button"
                 className="btn-close"
                 data-bs-dismiss="modal"
                 aria-label="Close"
+                onClick={hasModalHide}
               ></button>
             </div>
             <div className="modal-body">
@@ -220,22 +347,29 @@ function App() {
                         輸入圖片網址
                       </label>
                       <input
+                      value={productModal.imageUrl}
+                      onChange={setModalContent}
+                      name="imageUrl"
                         type="text"
                         className="form-control"
                         placeholder="請輸入圖片連結"
                       />
                     </div>
-                    <img className="img-fluid" src="" alt="" />
+                    <img className="img-fluid" src={productModal.imageUrl} alt={productModal.title} />
                   </div>
                   <div>
-                    <button className="btn btn-outline-primary btn-sm d-block w-100">
+                    {productModal.imagesUrl.length < 5 && (<button 
+                    className="btn btn-outline-primary btn-sm d-block w-100"
+                    onClick={addImage}>
                       新增圖片
-                    </button>
+                    </button>)}
                   </div>
                   <div>
-                    <button className="btn btn-outline-danger btn-sm d-block w-100">
+                    {productModal.imagesUrl && productModal.imagesUrl.length >1 && (<button
+                    className="btn btn-outline-danger btn-sm d-block w-100"
+                    onClick={deleteImage}>
                       刪除圖片
-                    </button>
+                    </button>)}
                   </div>
                 </div>
                 <div className="col-sm-8">
@@ -244,6 +378,9 @@ function App() {
                       標題
                     </label>
                     <input
+                      value={productModal.title}
+                      onChange={setModalContent}
+                      name="title"
                       id="title"
                       type="text"
                       className="form-control"
@@ -257,6 +394,9 @@ function App() {
                         分類
                       </label>
                       <input
+                      value={productModal.category}
+                      onChange={setModalContent}
+                      name="category"
                         id="category"
                         type="text"
                         className="form-control"
@@ -268,6 +408,9 @@ function App() {
                         單位
                       </label>
                       <input
+                      value={productModal.unit}
+                      onChange={setModalContent}
+                      name="unit"
                         id="unit"
                         type="text"
                         className="form-control"
@@ -282,6 +425,9 @@ function App() {
                         原價
                       </label>
                       <input
+                      value={productModal.origin_price}
+                      onChange={setModalContent}
+                      name="origin_price"
                         id="origin_price"
                         type="number"
                         min="0"
@@ -294,6 +440,9 @@ function App() {
                         售價
                       </label>
                       <input
+                      value={productModal.price}
+                      onChange={setModalContent}
+                      name="price"
                         id="price"
                         type="number"
                         min="0"
@@ -309,6 +458,9 @@ function App() {
                       產品描述
                     </label>
                     <textarea
+                      value={productModal.description}
+                      onChange={setModalContent}
+                      name="description"
                       id="description"
                       className="form-control"
                       placeholder="請輸入產品描述"
@@ -319,6 +471,9 @@ function App() {
                       說明內容
                     </label>
                     <textarea
+                      value={productModal.content}
+                      onChange={setModalContent}
+                      name="content"
                       id="content"
                       className="form-control"
                       placeholder="請輸入說明內容"
@@ -327,6 +482,9 @@ function App() {
                   <div className="mb-3">
                     <div className="form-check">
                       <input
+                        checked={productModal.is_enabled}
+                        onChange={setModalContent}
+                        name="is_enabled"
                         id="is_enabled"
                         className="form-check-input"
                         type="checkbox"
@@ -344,21 +502,38 @@ function App() {
                 type="button"
                 className="btn btn-outline-secondary"
                 data-bs-dismiss="modal"
+                onClick={hasModalHide}
               >
                 取消
               </button>
-              <button type="button" className="btn btn-primary">
+              <button type="button" className="btn btn-primary"
+              onClick={submitProduct}>
                 確認
               </button>
             </div>
           </div>
         </div>
       </div>
+      <div className="modal fade" id="deleteModal" ref={deleteModalRef} tabIndex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+  <div className="modal-dialog">
+    <div className="modal-content">
+      <div className="modal-header">
+        <h5 className="modal-title" id="deleteModalLabel">Notice</h5>
+        <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div className="modal-body">
+        Are you sure you want to delete this product?
+      </div>
+      <div className="modal-footer">
+        <button type="button" className="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" className="btn btn-primary"
+        onClick={deleteProduct}>Confirm</button>
+      </div>
+    </div>
+  </div>
+</div>
     </>
   );
 }
-
-const root = ReactDOM.createRoot(document.getElementById("root"));
-root.render(<App />);
 
 export default App
