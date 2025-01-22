@@ -83,25 +83,10 @@ function App() {
   const [productModal, setProductModal] = useState(defaultModal);
   const deleteModalRef = useRef(null);
   const myDeleteModalRef = useRef(null);
+  const [inputImageValue, setInputImageValue] = useState("");
 
-  useEffect (()=>{
-    if (deleteModalRef.current && !myDeleteModalRef.current){
-      myDeleteModalRef.current = new Modal(deleteModalRef.current, {
-        keyboard: false,
-        backdrop: "static"
-      });
-    }
-  },[])
-const hasDeleteModalShow = (item) =>{
-  setProductModal(item);
-  if (myDeleteModalRef.current){
-    myDeleteModalRef.current.show();
-  } else {
-    console.log('modalRef.current is null')
-  }
-}
   useEffect(() => {
-    if (modalRef.current && !myModalRef.current) {
+    if (modalRef.current !== null && myModalRef.current === null) {
       myModalRef.current = new Modal(modalRef.current, {
         keyboard: false,
         backdrop: "static"
@@ -112,11 +97,12 @@ const hasDeleteModalShow = (item) =>{
   const hasModalShow = (state, item) =>{
     setModalState(state);
     if (state === 'add'){
-      setProductModal(defaultModal)
+      setProductModal(
+        {...defaultModal})
     } else {
       setProductModal(item)
     }
-    if (myModalRef.current){
+    if (myModalRef.current !== null){
       myModalRef.current.show();
     } else {
       console.log('modalRef.current is null')
@@ -124,27 +110,48 @@ const hasDeleteModalShow = (item) =>{
   }
 
   const hasModalHide = () =>{
-    if (myModalRef.current){
+    if (myModalRef.current !== null){
       myModalRef.current.hide();
     } else {
       console.log('modalRef.current is null')
     }
   }
+  useEffect (()=>{
+    if (deleteModalRef.current !== null && myDeleteModalRef.current === null){
+      myDeleteModalRef.current = new Modal(deleteModalRef.current, {
+        keyboard: false,
+        backdrop: "static"
+      });
+    }
+  },[])
 
+const hasDeleteModalShow = (item) =>{
+  setProductModal(item);
+  if (myDeleteModalRef.current !== null){
+    myDeleteModalRef.current.show();
+  } else {
+    console.log('modalRef.current is null')
+  }
+}
   const hasDeleteModalHide = () =>{
-    if (myDeleteModalRef.current){
+    if (myDeleteModalRef.current !== null){
       myDeleteModalRef.current.hide();
     } else {
       console.log('deleteModalRef.current is null')
     }
   }
+  const handleImageChange = (e) => {
+    const {value} = e.target
+    setInputImageValue(value)
+  }
 
   const addImage = () => {
-    const newImagesUrl = [...productModal.imagesUrl, ""]
+    const newImagesUrl = [...productModal.imagesUrl, inputImageValue]
     setProductModal({
       ...productModal,
       imagesUrl: newImagesUrl
     })
+    setInputImageValue("")
   }
 
   const deleteImage = () => {
@@ -347,15 +354,19 @@ const submitProduct = async () =>{
                         輸入圖片網址
                       </label>
                       <input
-                      value={productModal.imageUrl}
-                      onChange={setModalContent}
+                      value={inputImageValue}
+                      onChange={handleImageChange}
                       name="imageUrl"
                         type="text"
                         className="form-control"
                         placeholder="請輸入圖片連結"
                       />
                     </div>
-                    <img className="img-fluid" src={productModal.imageUrl} alt={productModal.title} />
+                    {productModal.imagesUrl.map((url,index) => (
+                      <img key={index} 
+                      className="img-fluid" 
+                      src={url} 
+                      alt={productModal.title} />))}
                   </div>
                   <div>
                     {productModal.imagesUrl.length < 5 && (<button 
@@ -519,13 +530,15 @@ const submitProduct = async () =>{
     <div className="modal-content">
       <div className="modal-header">
         <h5 className="modal-title" id="deleteModalLabel">Notice</h5>
-        <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close"
+        onClick={hasDeleteModalHide}></button>
       </div>
       <div className="modal-body">
-        Are you sure you want to delete this product?
+        Are you sure you want to delete {productModal.title}?
       </div>
       <div className="modal-footer">
-        <button type="button" className="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" className="btn btn-secondary" data-bs-dismiss="modal"
+        onClick={hasDeleteModalHide}>Cancel</button>
         <button type="button" className="btn btn-primary"
         onClick={deleteProduct}>Confirm</button>
       </div>
