@@ -18,7 +18,7 @@ const defaultModal = {
   description: "",
   content: "",
   is_enabled: false,
-  imagesUrl: [""]
+  imagesUrl: []
 }
 function App() {
   const [formData, setFormData] = useState({
