@@ -369,7 +369,7 @@ const submitProduct = async () =>{
                       alt={productModal.title} />))}
                   </div>
                   <div>
-                    {productModal.imagesUrl.length < 5git  && (<button 
+                    {productModal.imagesUrl.length < 5 && (<button 
                     className="btn btn-outline-primary btn-sm d-block w-100"
                     onClick={addImage}>
                       新增圖片
